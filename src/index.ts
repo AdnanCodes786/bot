@@ -1,12 +1,19 @@
-import dotenv from "dotenv";
+import express from "express";
 import { connectDB } from "./db/connect";
 import { registerWebhook } from "./utils/webhook-setup";
-dotenv.config();
 
+const app = express();
+const PORT = 3000;
 
-async function start(): Promise<void> {
-  await registerWebhook("https://keen-sparrow-79.webhook.cool");
-  await connectDB();
-}
+app.use(express.json());
 
-start();
+app.get("/", (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: "Backend is running 🚀",
+  });
+});
+
+app.listen(3000 , ()=>{
+  console.log("backned is running now")
+})
