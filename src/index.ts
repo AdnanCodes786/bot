@@ -13,13 +13,14 @@ const app = express();
 const PORT = 3000;
 
 async function sendTelegramMessage(chatId: number, text: string) {
-  await axios.post(
+  const response = await axios.post(
     `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
     {
       chat_id: chatId,
       text,
     },
   );
+  console.log(JSON.stringify(response) + " respnose");
 }
 
 app.use(express.json());
@@ -66,21 +67,78 @@ app.post("/message", async (req, res) => {
     }
 
     if (text.startsWith("/summary")) {
-      const parts = text.trim().split(/\s+/);
+      console.log("[/summary] command received:", text);
 
-      if (parts.length !== 2) {
-        await sendTelegramMessage(chat.id, "Usage:\n/summary YYYY-MM-DD");
+      const raw = text.replace("/summary", "").trim();
+
+      if (!raw) {
+        console.log("[/summary] missing date argument");
+        await sendTelegramMessage(chat.id, "Usage:\n/summary 24th Feb 2026");
         return res.sendStatus(200);
       }
 
-      const dateStr = parts[1];
-      const date = new Date(dateStr);
+      const match = raw.match(
+        /^(\d{1,2})(st|nd|rd|th)\s+([A-Za-z]+)\s+(\d{4})$/i,
+      );
 
-      if (isNaN(date.getTime())) {
+      if (!match) {
+        console.log("[/summary] invalid format:", raw);
         await sendTelegramMessage(
           chat.id,
-          "Invalid date format. Use YYYY-MM-DD",
+          "Invalid format.\nUse: /summary 24th Feb 2026",
         );
+        return res.sendStatus(200);
+      }
+
+      const day = parseInt(match[1], 10);
+      const monthName = match[3].toLowerCase();
+      const year = parseInt(match[4], 10);
+
+      console.log("[/summary] parsed date:", { day, monthName, year });
+
+      const monthMap: Record<string, number> = {
+        jan: 0,
+        january: 0,
+        feb: 1,
+        february: 1,
+        mar: 2,
+        march: 2,
+        apr: 3,
+        april: 3,
+        may: 4,
+        jun: 5,
+        june: 5,
+        jul: 6,
+        july: 6,
+        aug: 7,
+        august: 7,
+        sep: 8,
+        sept: 8,
+        september: 8,
+        oct: 9,
+        october: 9,
+        nov: 10,
+        november: 10,
+        dec: 11,
+        december: 11,
+      };
+
+      const month = monthMap[monthName];
+
+      if (month === undefined) {
+        console.log("[/summary] invalid month:", monthName);
+        await sendTelegramMessage(
+          chat.id,
+          "Invalid month name.\nExample: Feb, February",
+        );
+        return res.sendStatus(200);
+      }
+
+      const date = new Date(year, month, day);
+
+      if (isNaN(date.getTime())) {
+        console.log("[/summary] invalid date object:", date);
+        await sendTelegramMessage(chat.id, "Invalid date provided.");
         return res.sendStatus(200);
       }
 
@@ -90,15 +148,31 @@ app.post("/message", async (req, res) => {
       const periodEnd = new Date(date);
       periodEnd.setHours(23, 59, 59, 999);
 
+      console.log(
+        "[/summary] period window:",
+        periodStart.toISOString(),
+        "→",
+        periodEnd.toISOString(),
+      );
+
       try {
+        console.log("[/summary] generating summary for group:", chat.id);
+
         const result = await generateOrFetchSummary({
           telegramGroupId: chat.id,
           periodStart,
           periodEnd,
         });
 
+        console.log(
+          "[/summary] summary generated (cache:",
+          result.fromCache,
+          ")",
+        );
+
         await sendTelegramMessage(chat.id, result.summary);
       } catch (err: any) {
+        console.error("[/summary] failed:", err.message);
         await sendTelegramMessage(chat.id, err.message);
       }
 
@@ -135,7 +209,6 @@ app.post("/message", async (req, res) => {
 
 async function start() {
   await connectDB();
-
   app.listen(PORT, () => {
     console.log("Backend is running now");
   });
