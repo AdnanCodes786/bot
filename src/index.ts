@@ -17,9 +17,12 @@ app.get("/", (req, res) => {
 });
 
 app.post("/message", (req, res) => {
+  console.log("📩 Telegram update received");
+  console.log(JSON.stringify(req.body, null, 2));
+
   res.status(200).json({
     success: true,
-    data: req.body,
+    // data: req.body,
     message: "Route for receiving telegram message",
   });
 });
