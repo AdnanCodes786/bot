@@ -5,7 +5,8 @@ import express from "express";
 import { connectDB } from "./db/connect";
 import { GroupModel } from "./models/group";
 import { MessageModel } from "./models/mesage";
-connectDB();
+import summaryRouter from "./routes/summaryRoute";
+
 const app = express();
 const PORT = 3000;
 
@@ -17,6 +18,8 @@ app.get("/", (req, res) => {
     message: "Backend is running 🚀",
   });
 });
+
+app.use("/summary", summaryRouter);
 
 app.post("/message", async (req, res) => {
   try {
@@ -73,12 +76,14 @@ app.post("/message", async (req, res) => {
 
     return res.sendStatus(200);
   } catch (error) {
-    console.error(error);
+    console.error("Webhook error:", error);
     return res.sendStatus(200);
   }
 });
 
 async function start() {
+  await connectDB();
+
   app.listen(PORT, () => {
     console.log("Backend is running now");
   });
