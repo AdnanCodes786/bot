@@ -21,10 +21,7 @@ app.get("/", (req, res) => {
 app.post("/message", async (req, res) => {
   const update = req.body;
   if (update.message) {
-    return res.status(400).json({
-      success: false,
-      message: "no message content found",
-    });
+      return res.sendStatus(200);
   }
   const message = update.message;
   const { chat, from, text } = message;
