@@ -14,6 +14,16 @@ app.get("/", (req, res) => {
   });
 });
 
-app.listen(3000 , ()=>{
-  console.log("backned is running now")
+
+app.post('/message',(req,res)=>{
+  const data =req.body;
+  return res.status(200).json({
+    success:true,
+    data:data,
+    message:"Route for receiving telegram message"
+  })
+})
+
+app.listen(3000 ,async ()=>{
+  console.log("backned is running now");
 })
