@@ -19,27 +19,40 @@ app.get("/", (req, res) => {
 });
 
 app.post("/message", async (req, res) => {
-  const update = req.body;
-  if (update.message) {
+  try {
+    const update = req.body;
+
+    if (!update || !update.message) {
       return res.sendStatus(200);
-  }
-  const message = update.message;
-  const { chat, from, text } = message;
+    }
 
-  if (!chat || (chat.type !== "group" && chat.type !== "supergroup")) {
-    return res.sendStatus(200);
-  }
+    const message = update.message;
 
-  if (!from.is_bot) {
-    return res.sendStatus(200);
-  }
-  if (text.startsWith("/")) {
-    return res.sendStatus(200);
-  }
+    if (!message.chat || !message.from) {
+      return res.sendStatus(200);
+    }
 
-  const telegramGroupId=chat.id;
+    const { chat, from, text } = message;
 
-  await GroupModel.findOneAndUpdate(
+    if (chat.type !== "group" && chat.type !== "supergroup") {
+      return res.sendStatus(200);
+    }
+
+    if (from.is_bot) {
+      return res.sendStatus(200);
+    }
+
+    if (!text || typeof text !== "string") {
+      return res.sendStatus(200);
+    }
+
+    if (text.startsWith("/")) {
+      return res.sendStatus(200);
+    }
+
+    const telegramGroupId = chat.id;
+
+    await GroupModel.findOneAndUpdate(
       { telegramGroupId },
       {
         telegramGroupId,
@@ -48,7 +61,7 @@ app.post("/message", async (req, res) => {
         summaryRunsUsed: 0,
         summaryRunsLimit: 5,
       },
-      { upsert: true, new: true }
+      { upsert: true }
     );
 
     await MessageModel.create({
@@ -58,11 +71,11 @@ app.post("/message", async (req, res) => {
       text: text.trim(),
     });
 
-  res.status(200).json({
-    success: true,
-    // data: req.body,
-    message: "Route for receiving telegram message",
-  });
+    return res.sendStatus(200);
+  } catch (error) {
+    console.error(error);
+    return res.sendStatus(200);
+  }
 });
 
 async function start() {
