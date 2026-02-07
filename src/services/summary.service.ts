@@ -3,7 +3,7 @@ import { GroupModel } from "../models/group";
 import { MessageModel } from "../models/mesage";
 import { SummaryModel } from "../models/summary";
 
-const ai = new GoogleGenAI({});
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const MIN_MESSAGES = 1;
 const MAX_MESSAGE_LENGTH = 1000;
